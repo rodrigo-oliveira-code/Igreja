@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String?
+  nome      String
+  role      Role     @default(MEMBRO)
+  membroId  String?  @unique
+  membro    Membro?  @relation(fields: [membroId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  LIDER
+  MEMBRO
+}
+
+model Membro {
+  id             String        @id @default(cuid())
+  nome           String
+  email          String?       @unique
+  telefone       String?
+  dataNascimento DateTime?
+  dataIngresso   DateTime?
+  status         StatusMembro  @default(ATIVO)
+  foto           String?
+  endereco       String?
+  observacoes    String?
+  departamentos  MembroDepto[]
+  escalas        Escala[]
+  user           User?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum StatusMembro {
+  ATIVO
+  INATIVO
+  VISITANTE
+  TRANSFERIDO
+}
+
+model Departamento {
+  id        String        @id @default(cuid())
+  nome      String        @unique
+  descricao String?
+  cor       String        @default("#7C3AED")
+  liderId   String?
+  membros   MembroDepto[]
+  escalas   Escala[]
+  createdAt DateTime      @default(now())
+}
+
+model MembroDepto {
+  id             String       @id @default(cuid())
+  membroId       String
+  departamentoId String
+  funcao         String?
+  membro         Membro       @relation(fields: [membroId], references: [id])
+  departamento   Departamento @relation(fields: [departamentoId], references: [id])
+
+  @@unique([membroId, departamentoId])
+}
+
+model Evento {
+  id         String     @id @default(cuid())
+  titulo     String
+  descricao  String?
+  data       DateTime
+  horaInicio String?
+  horaFim    String?
+  tipo       TipoEvento @default(CULTO)
+  local      String?
+  escalas    Escala[]
+  createdAt  DateTime   @default(now())
+}
+
+enum TipoEvento {
+  CULTO
+  ENSAIO
+  REUNIAO
+  CELULA
+  CONFERENCIA
+  OUTRO
+}
+
+model Escala {
+  id             String        @id @default(cuid())
+  eventoId       String
+  membroId       String
+  departamentoId String?
+  funcao         String
+  confirmado     Boolean       @default(false)
+  evento         Evento        @relation(fields: [eventoId], references: [id])
+  membro         Membro        @relation(fields: [membroId], references: [id])
+  departamento   Departamento? @relation(fields: [departamentoId], references: [id])
+  createdAt      DateTime      @default(now())
+
+  @@unique([eventoId, membroId, funcao])
+}
+
+model Lancamento {
+  id          String         @id @default(cuid())
+  tipo        TipoLancamento
+  categoria   String
+  valor       Decimal        @db.Decimal(10, 2)
+  descricao   String?
+  data        DateTime
+  cultoId     String?
+  comprovante String?
+  createdAt   DateTime       @default(now())
+}
+
+enum TipoLancamento {
+  ENTRADA
+  SAIDA
+}
+
+model ConfiguracaoIgreja {
+  id    String @id @default(cuid())
+  chave String @unique
+  valor String
+}
