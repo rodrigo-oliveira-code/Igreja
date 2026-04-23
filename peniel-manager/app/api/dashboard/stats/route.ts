@@ -28,7 +28,7 @@ export async function GET() {
     prisma.evento.count({ where: { data: { gte: startOfWeek, lte: endOfWeek } } }),
     prisma.departamento.count(),
     prisma.lancamento.findMany({
-      where: { data: { gte: startOfMonth, lte: endOfMonth } },
+      where: { data: { gte: startOfMonth, lte: endOfMonth }, ativo: true },
     }),
     prisma.evento.findMany({
       where: { data: { gte: now } },
@@ -37,23 +37,24 @@ export async function GET() {
       include: { escalas: { include: { membro: true } } },
     }),
     prisma.lancamento.findMany({
+      where: { ativo: true },
       orderBy: { createdAt: 'desc' },
       take: 5,
+      include: {
+        contaPlano: { select: { nome: true, codigo: true } },
+      },
     }),
     prisma.membro.findMany({
-      where: {
-        status: 'ATIVO',
-        dataNascimento: { not: null },
-      },
+      where: { status: 'ATIVO', dataNascimento: { not: null } },
       select: { id: true, nome: true, dataNascimento: true, foto: true },
     }),
   ])
 
   const entradas = lancamentosDoMes
-    .filter((l) => l.tipo === 'ENTRADA')
+    .filter((l) => l.tipo === 'RECEITA')
     .reduce((sum, l) => sum + Number(l.valor), 0)
   const saidas = lancamentosDoMes
-    .filter((l) => l.tipo === 'SAIDA')
+    .filter((l) => l.tipo === 'DESPESA')
     .reduce((sum, l) => sum + Number(l.valor), 0)
   const saldo = entradas - saidas
 
@@ -66,15 +67,17 @@ export async function GET() {
     Array.from({ length: 6 }, (_, i) => {
       const date = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
       const endDate = new Date(now.getFullYear(), now.getMonth() - (4 - i), 0, 23, 59, 59)
-      return prisma.lancamento.groupBy({
-        by: ['tipo'],
-        where: { data: { gte: date, lte: endDate } },
-        _sum: { valor: true },
-      }).then((data) => ({
-        mes: date.toLocaleString('pt-BR', { month: 'short' }),
-        entradas: Number(data.find((d) => d.tipo === 'ENTRADA')?._sum?.valor ?? 0),
-        saidas: Number(data.find((d) => d.tipo === 'SAIDA')?._sum?.valor ?? 0),
-      }))
+      return prisma.lancamento
+        .groupBy({
+          by: ['tipo'],
+          where: { data: { gte: date, lte: endDate }, ativo: true },
+          _sum: { valor: true },
+        })
+        .then((data) => ({
+          mes: date.toLocaleString('pt-BR', { month: 'short' }),
+          entradas: Number(data.find((d) => d.tipo === 'RECEITA')?._sum?.valor ?? 0),
+          saidas: Number(data.find((d) => d.tipo === 'DESPESA')?._sum?.valor ?? 0),
+        }))
     })
   )
 

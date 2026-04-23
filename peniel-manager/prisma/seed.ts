@@ -9,8 +9,8 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log('🌱 Iniciando seed...')
 
-  // Admin user
   const hashedPassword = await bcrypt.hash('admin123', 12)
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@peniel.com' },
     update: {},
@@ -18,10 +18,22 @@ async function main() {
       email: 'admin@peniel.com',
       password: hashedPassword,
       nome: 'Administrador',
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
     },
   })
   console.log('✅ Usuário admin criado:', admin.email)
+
+  const tesoureiro = await prisma.user.upsert({
+    where: { email: 'tesoureiro@peniel.com' },
+    update: {},
+    create: {
+      email: 'tesoureiro@peniel.com',
+      password: hashedPassword,
+      nome: 'João Tesoureiro',
+      role: 'TESOUREIRO',
+    },
+  })
+  console.log('✅ Tesoureiro criado:', tesoureiro.email)
 
   // Departamentos
   const depts = await Promise.all([
@@ -78,7 +90,6 @@ async function main() {
   }
   console.log('✅ Membros criados:', membros.length)
 
-  // Associar membros a departamentos
   await prisma.membroDepto.createMany({
     skipDuplicates: true,
     data: [
@@ -109,7 +120,6 @@ async function main() {
   )
   console.log('✅ Eventos criados:', eventos.length)
 
-  // Escalas
   await prisma.escala.createMany({
     skipDuplicates: true,
     data: [
@@ -124,38 +134,196 @@ async function main() {
   })
   console.log('✅ Escalas criadas')
 
-  // Lançamentos financeiros
+  // ─── PLANO DE CONTAS ──────────────────────────────────────
+  const contaReceitas = await prisma.planoDeContas.upsert({
+    where: { codigo: '1' },
+    update: {},
+    create: { codigo: '1', nome: 'RECEITAS', tipo: 'RECEITA' },
+  })
+  const contaDizimos = await prisma.planoDeContas.upsert({
+    where: { codigo: '1.1' },
+    update: {},
+    create: { codigo: '1.1', nome: 'Dízimos', tipo: 'RECEITA', paiId: contaReceitas.id },
+  })
+  const contaDizimosMemb = await prisma.planoDeContas.upsert({
+    where: { codigo: '1.1.1' },
+    update: {},
+    create: { codigo: '1.1.1', nome: 'Dízimos de Membros', tipo: 'RECEITA', paiId: contaDizimos.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '1.1.2' },
+    update: {},
+    create: { codigo: '1.1.2', nome: 'Dízimos Online', tipo: 'RECEITA', paiId: contaDizimos.id },
+  })
+  const contaOfertas = await prisma.planoDeContas.upsert({
+    where: { codigo: '1.2' },
+    update: {},
+    create: { codigo: '1.2', nome: 'Ofertas', tipo: 'RECEITA', paiId: contaReceitas.id },
+  })
+  const contaOfertasCulto = await prisma.planoDeContas.upsert({
+    where: { codigo: '1.2.1' },
+    update: {},
+    create: { codigo: '1.2.1', nome: 'Ofertas de Culto', tipo: 'RECEITA', paiId: contaOfertas.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '1.2.2' },
+    update: {},
+    create: { codigo: '1.2.2', nome: 'Ofertas Especiais', tipo: 'RECEITA', paiId: contaOfertas.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '1.3' },
+    update: {},
+    create: { codigo: '1.3', nome: 'Campanhas', tipo: 'RECEITA', paiId: contaReceitas.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '1.4' },
+    update: {},
+    create: { codigo: '1.4', nome: 'Outras Receitas', tipo: 'RECEITA', paiId: contaReceitas.id },
+  })
+
+  const contaDespesas = await prisma.planoDeContas.upsert({
+    where: { codigo: '2' },
+    update: {},
+    create: { codigo: '2', nome: 'DESPESAS', tipo: 'DESPESA' },
+  })
+  const contaPessoal = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.1' },
+    update: {},
+    create: { codigo: '2.1', nome: 'Pessoal', tipo: 'DESPESA', paiId: contaDespesas.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '2.1.1' },
+    update: {},
+    create: { codigo: '2.1.1', nome: 'Salários', tipo: 'DESPESA', paiId: contaPessoal.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '2.1.2' },
+    update: {},
+    create: { codigo: '2.1.2', nome: 'Pró-Labore', tipo: 'DESPESA', paiId: contaPessoal.id },
+  })
+  const contaInstalacoes = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.2' },
+    update: {},
+    create: { codigo: '2.2', nome: 'Instalações', tipo: 'DESPESA', paiId: contaDespesas.id },
+  })
+  const contaAluguel = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.2.1' },
+    update: {},
+    create: { codigo: '2.2.1', nome: 'Aluguel', tipo: 'DESPESA', paiId: contaInstalacoes.id },
+  })
+  const contaEnergia = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.2.2' },
+    update: {},
+    create: { codigo: '2.2.2', nome: 'Energia Elétrica', tipo: 'DESPESA', paiId: contaInstalacoes.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '2.2.3' },
+    update: {},
+    create: { codigo: '2.2.3', nome: 'Água', tipo: 'DESPESA', paiId: contaInstalacoes.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '2.2.4' },
+    update: {},
+    create: { codigo: '2.2.4', nome: 'Internet/Telefone', tipo: 'DESPESA', paiId: contaInstalacoes.id },
+  })
+  const contaMissoes = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.3' },
+    update: {},
+    create: { codigo: '2.3', nome: 'Missões', tipo: 'DESPESA', paiId: contaDespesas.id },
+  })
+  const contaMaterial = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.4' },
+    update: {},
+    create: { codigo: '2.4', nome: 'Material', tipo: 'DESPESA', paiId: contaDespesas.id },
+  })
+  const contaManutencao = await prisma.planoDeContas.upsert({
+    where: { codigo: '2.5' },
+    update: {},
+    create: { codigo: '2.5', nome: 'Manutenção', tipo: 'DESPESA', paiId: contaDespesas.id },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '2.6' },
+    update: {},
+    create: { codigo: '2.6', nome: 'Eventos', tipo: 'DESPESA', paiId: contaDespesas.id },
+  })
+
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '3' },
+    update: {},
+    create: { codigo: '3', nome: 'ATIVOS', tipo: 'ATIVO' },
+  })
+  await prisma.planoDeContas.upsert({
+    where: { codigo: '4' },
+    update: {},
+    create: { codigo: '4', nome: 'PASSIVOS', tipo: 'PASSIVO' },
+  })
+  console.log('✅ Plano de Contas criado')
+
+  // ─── CONTAS BANCÁRIAS ─────────────────────────────────────
+  const caixaGeral = await prisma.contaBancaria.create({
+    data: {
+      nome: 'Caixa Geral',
+      banco: 'Caixa',
+      conta: '001',
+      tipo: 'CAIXA',
+      saldoAtual: 3500.00,
+    },
+  })
+  const contaPrincipal = await prisma.contaBancaria.create({
+    data: {
+      nome: 'Conta Principal',
+      banco: 'Banco do Brasil',
+      agencia: '1234-5',
+      conta: '56789-0',
+      tipo: 'CORRENTE',
+      saldoAtual: 15300.00,
+    },
+  })
+  console.log('✅ Contas bancárias criadas')
+
+  // ─── FORNECEDOR ───────────────────────────────────────────
+  const fornecedor = await prisma.fornecedor.create({
+    data: {
+      nome: 'Imobiliária Central',
+      cpfCnpj: '12.345.678/0001-90',
+      email: 'contato@imobiliaria.com',
+      telefone: '(11) 3456-7890',
+    },
+  })
+  console.log('✅ Fornecedor criado')
+
+  // ─── LANÇAMENTOS ──────────────────────────────────────────
   const lancamentosData = [
-    // Mês atual
-    { tipo: 'ENTRADA', categoria: 'Dízimo', valor: 2500.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 1), descricao: 'Dízimos culto domingo' },
-    { tipo: 'ENTRADA', categoria: 'Oferta', valor: 850.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 1), descricao: 'Oferta culto domingo' },
-    { tipo: 'ENTRADA', categoria: 'Dízimo', valor: 1800.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 8), descricao: 'Dízimos culto domingo' },
-    { tipo: 'ENTRADA', categoria: 'Doação', valor: 500.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 10), descricao: 'Doação especial' },
-    { tipo: 'SAIDA', categoria: 'Água/Luz', valor: 420.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 5), descricao: 'Conta de energia elétrica' },
-    { tipo: 'SAIDA', categoria: 'Aluguel', valor: 1200.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 1), descricao: 'Aluguel do templo' },
-    { tipo: 'SAIDA', categoria: 'Material', valor: 180.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 12), descricao: 'Material de escritório' },
+    // Mês atual — Receitas
+    { tipo: 'RECEITA', categoria: 'Dízimo', valor: 2500.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 1), descricao: 'Dízimos culto domingo', contaPlanoId: contaDizimosMemb.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO', departamentoId: depts[0].id },
+    { tipo: 'RECEITA', categoria: 'Oferta', valor: 850.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 1), descricao: 'Oferta culto domingo', contaPlanoId: contaOfertasCulto.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO' },
+    { tipo: 'RECEITA', categoria: 'Dízimo', valor: 1800.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 8), descricao: 'Dízimos culto domingo', contaPlanoId: contaDizimosMemb.id, contaBancariaId: caixaGeral.id, formaPagamento: 'PIX', status: 'APROVADO', departamentoId: depts[0].id },
+    { tipo: 'RECEITA', categoria: 'Doação', valor: 500.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 10), descricao: 'Doação especial', contaBancariaId: contaPrincipal.id, formaPagamento: 'PIX', status: 'APROVADO' },
+    // Mês atual — Despesas
+    { tipo: 'DESPESA', categoria: 'Água/Luz', valor: 420.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 5), descricao: 'Conta de energia elétrica', contaPlanoId: contaEnergia.id, contaBancariaId: contaPrincipal.id, formaPagamento: 'BOLETO', status: 'PAGO', fornecedorId: fornecedor.id },
+    { tipo: 'DESPESA', categoria: 'Aluguel', valor: 1200.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 1), descricao: 'Aluguel do templo', contaPlanoId: contaAluguel.id, contaBancariaId: contaPrincipal.id, formaPagamento: 'TRANSFERENCIA', status: 'PAGO', fornecedorId: fornecedor.id },
+    { tipo: 'DESPESA', categoria: 'Material', valor: 180.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 12), descricao: 'Material de escritório', contaPlanoId: contaMaterial.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO' },
+    { tipo: 'DESPESA', categoria: 'Manutenção', valor: 750.00, data: new Date(hoje.getFullYear(), hoje.getMonth(), 15), descricao: 'Reparo no sistema de som', contaPlanoId: contaManutencao.id, contaBancariaId: caixaGeral.id, formaPagamento: 'PIX', status: 'PENDENTE' },
     // Mês anterior
-    { tipo: 'ENTRADA', categoria: 'Dízimo', valor: 3200.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 7) },
-    { tipo: 'ENTRADA', categoria: 'Oferta', valor: 1100.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 7) },
-    { tipo: 'SAIDA', categoria: 'Aluguel', valor: 1200.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1) },
-    { tipo: 'SAIDA', categoria: 'Água/Luz', valor: 390.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 5) },
-    { tipo: 'SAIDA', categoria: 'Missões', valor: 300.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 15) },
+    { tipo: 'RECEITA', categoria: 'Dízimo', valor: 3200.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 7), descricao: 'Dízimos culto domingo', contaPlanoId: contaDizimosMemb.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO' },
+    { tipo: 'RECEITA', categoria: 'Oferta', valor: 1100.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 7), contaPlanoId: contaOfertasCulto.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO' },
+    { tipo: 'DESPESA', categoria: 'Aluguel', valor: 1200.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1), contaPlanoId: contaAluguel.id, contaBancariaId: contaPrincipal.id, formaPagamento: 'TRANSFERENCIA', status: 'PAGO', fornecedorId: fornecedor.id },
+    { tipo: 'DESPESA', categoria: 'Água/Luz', valor: 390.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 5), contaPlanoId: contaEnergia.id, contaBancariaId: contaPrincipal.id, formaPagamento: 'BOLETO', status: 'PAGO' },
+    { tipo: 'DESPESA', categoria: 'Missões', valor: 300.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 1, 15), contaPlanoId: contaMissoes.id, contaBancariaId: contaPrincipal.id, formaPagamento: 'TRANSFERENCIA', status: 'PAGO' },
     // 2 meses atrás
-    { tipo: 'ENTRADA', categoria: 'Dízimo', valor: 2900.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 7) },
-    { tipo: 'ENTRADA', categoria: 'Oferta', valor: 750.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 7) },
-    { tipo: 'SAIDA', categoria: 'Aluguel', valor: 1200.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1) },
-    { tipo: 'SAIDA', categoria: 'Manutenção', valor: 450.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 18) },
+    { tipo: 'RECEITA', categoria: 'Dízimo', valor: 2900.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 7), contaPlanoId: contaDizimosMemb.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO' },
+    { tipo: 'RECEITA', categoria: 'Oferta', valor: 750.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 7), contaPlanoId: contaOfertasCulto.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'APROVADO' },
+    { tipo: 'DESPESA', categoria: 'Aluguel', valor: 1200.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1), contaPlanoId: contaAluguel.id, contaBancariaId: contaPrincipal.id, formaPagamento: 'TRANSFERENCIA', status: 'PAGO', fornecedorId: fornecedor.id },
+    { tipo: 'DESPESA', categoria: 'Manutenção', valor: 450.00, data: new Date(hoje.getFullYear(), hoje.getMonth() - 2, 18), contaPlanoId: contaManutencao.id, contaBancariaId: caixaGeral.id, formaPagamento: 'ESPECIE', status: 'PAGO' },
   ]
 
-  await prisma.lancamento.createMany({
-    data: lancamentosData as any[],
-  })
+  await prisma.lancamento.createMany({ data: lancamentosData as any[] })
   console.log('✅ Lançamentos financeiros criados:', lancamentosData.length)
 
   console.log('\n🎉 Seed concluído com sucesso!')
   console.log('\n📋 Credenciais de acesso:')
-  console.log('   Email: admin@peniel.com')
-  console.log('   Senha: admin123')
+  console.log('   Admin  — admin@peniel.com / admin123')
+  console.log('   Tesour — tesoureiro@peniel.com / admin123')
 }
 
 main()
