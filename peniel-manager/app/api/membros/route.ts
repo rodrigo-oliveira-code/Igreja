@@ -34,6 +34,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(membros)
 }
 
+function parseDate(value: string | undefined | null): Date | null {
+  if (!value) return null
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? null : d
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -45,11 +51,23 @@ export async function POST(req: NextRequest) {
       nome: data.nome,
       email: data.email || null,
       telefone: data.telefone || null,
-      dataNascimento: data.dataNascimento ? new Date(data.dataNascimento) : null,
-      dataIngresso: data.dataIngresso ? new Date(data.dataIngresso) : null,
+      dataNascimento: parseDate(data.dataNascimento),
+      dataIngresso: parseDate(data.dataIngresso),
       status: data.status || 'ATIVO',
       endereco: data.endereco || null,
       observacoes: data.observacoes || null,
+      cpf: data.cpf || null,
+      rg: data.rg || null,
+      estadoCivil: data.estadoCivil || null,
+      profissao: data.profissao || null,
+      naturalidade: data.naturalidade || null,
+      nomePai: data.nomePai || null,
+      nomeMae: data.nomeMae || null,
+      dataBatismoAguas: parseDate(data.dataBatismoAguas),
+      dataOrdenacaoCooperador: parseDate(data.dataOrdenacaoCooperador),
+      dataOrdenacaoDiacono: parseDate(data.dataOrdenacaoDiacono),
+      dataOrdenacaoPresbitero: parseDate(data.dataOrdenacaoPresbitero),
+      dataOrdenacaoPastor: parseDate(data.dataOrdenacaoPastor),
     },
   })
 

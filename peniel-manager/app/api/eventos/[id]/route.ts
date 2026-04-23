@@ -3,12 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, ctx: RouteContext<'/api/eventos/[id]'>) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { id } = await ctx.params
+
   const evento = await prisma.evento.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { escalas: { include: { membro: true, departamento: true } } },
   })
 
@@ -16,14 +18,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(evento)
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, ctx: RouteContext<'/api/eventos/[id]'>) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { id } = await ctx.params
   const data = await req.json()
 
   const evento = await prisma.evento.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       titulo: data.titulo,
       descricao: data.descricao || null,
@@ -38,10 +41,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(evento)
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, ctx: RouteContext<'/api/eventos/[id]'>) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await prisma.evento.delete({ where: { id: params.id } })
+  const { id } = await ctx.params
+  await prisma.evento.delete({ where: { id } })
   return NextResponse.json({ success: true })
 }

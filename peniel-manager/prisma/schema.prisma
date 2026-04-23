@@ -24,21 +24,35 @@ enum Role {
 }
 
 model Membro {
-  id             String        @id @default(cuid())
-  nome           String
-  email          String?       @unique
-  telefone       String?
-  dataNascimento DateTime?
-  dataIngresso   DateTime?
-  status         StatusMembro  @default(ATIVO)
-  foto           String?
-  endereco       String?
-  observacoes    String?
-  departamentos  MembroDepto[]
-  escalas        Escala[]
-  user           User?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                          String        @id @default(cuid())
+  nome                        String
+  email                       String?       @unique
+  telefone                    String?
+  dataNascimento              DateTime?
+  dataIngresso                DateTime?
+  status                      StatusMembro  @default(ATIVO)
+  foto                        String?
+  endereco                    String?
+  observacoes                 String?
+  // Dados pessoais complementares
+  cpf                         String?       @unique
+  rg                          String?
+  estadoCivil                 String?
+  profissao                   String?
+  naturalidade                String?
+  nomePai                     String?
+  nomeMae                     String?
+  // Dados eclesiásticos
+  dataBatismoAguas            DateTime?
+  dataOrdenacaoCooperador     DateTime?
+  dataOrdenacaoDiacono        DateTime?
+  dataOrdenacaoPresbitero     DateTime?
+  dataOrdenacaoPastor         DateTime?
+  departamentos               MembroDepto[]
+  escalas                     Escala[]
+  user                        User?
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
 }
 
 enum StatusMembro {
