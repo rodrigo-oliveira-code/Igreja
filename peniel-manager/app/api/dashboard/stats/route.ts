@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { Lancamento } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -51,11 +50,11 @@ export async function GET() {
   ])
 
   const entradas = lancamentosDoMes
-    .filter((l: Lancamento) => l.tipo === 'ENTRADA')
-    .reduce((sum: number, l: Lancamento) => sum + Number(l.valor), 0)
+    .filter((l) => l.tipo === 'ENTRADA')
+    .reduce((sum, l) => sum + Number(l.valor), 0)
   const saidas = lancamentosDoMes
-    .filter((l: Lancamento) => l.tipo === 'SAIDA')
-    .reduce((sum: number, l: Lancamento) => sum + Number(l.valor), 0)
+    .filter((l) => l.tipo === 'SAIDA')
+    .reduce((sum, l) => sum + Number(l.valor), 0)
   const saldo = entradas - saidas
 
   const aniversariantesFilter = aniversariantesDoMes.filter((m) => {
